@@ -49,7 +49,7 @@ function _createUIElements($componentDiv) {
     //
     // make $optionsDiv (left column)
     //
-    const $optionsDiv = $('<div class="col-md-3"></div>');
+    const $optionsDiv = $('<div class="col-md-3" id="forecastViz_options"></div>');
 
     // add Outcome, Unit, and Interval selects (form)
     const $outcomeFormRow = $(
@@ -104,7 +104,7 @@ function _createUIElements($componentDiv) {
     //
     // make $vizDiv (right column)
     //
-    const $vizDiv = $('<div class="col-md-9"></div>');
+    const $vizDiv = $('<div class="col-md-9" id="forecastViz_viz"></div>');
     const $buttonsDiv = $(
         '<div class="container">\n' +
         '    <div class="col-md-12 text-center">\n' +
@@ -114,7 +114,7 @@ function _createUIElements($componentDiv) {
         '</div>'
     );
     $vizDiv.append($('<p class="forecastViz_disclaimer"><b><span id="disclaimer">{xx_disclaimer}</span></b></p>'));
-    $vizDiv.append($('<div id="ploty_div"></div>'));
+    $vizDiv.append($('<div id="ploty_div" style="width: 100%; height: 72vh; position: relative;"></div>'));
     $vizDiv.append($buttonsDiv);
     $vizDiv.append($('<p style="text-align:center"><small>Note: You can navigate to forecasts from previous weeks with the left and right arrow keys</small></p>'));
 
