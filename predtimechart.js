@@ -583,25 +583,7 @@ const App = {
                 yanchor: 'top',
             },
             xaxis: {
-                title: {text: 'Date'},
-                rangeselector: {
-                    buttons: [
-                        {
-                            count: 1,
-                            label: '1m',
-                            step: 'month',
-                            stepmode: 'backward'
-                        },
-                        {
-                            count: 6,
-                            label: '6m',
-                            step: 'month',
-                            stepmode: 'backward'
-                        },
-                        {step: 'all'}
-                    ]
-                },
-                rangeslider: {},
+                title: {text: 'Date'}
             },
             yaxis: {
                 title: {text: variable, hoverformat: '.2f'},
