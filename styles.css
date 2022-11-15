@@ -19,6 +19,8 @@ Modify default Bootstrap 4 styles to make make navbar and GitHub button match ol
     padding-left: 1.25em;
     padding-right: 1.25em;
     transition: .3s ease;
+    letter-spacing: .035em;
+    line-height: 1;
 }
 
 #github-link:hover {
