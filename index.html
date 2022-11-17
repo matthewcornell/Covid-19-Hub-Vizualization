@@ -17,7 +17,7 @@
     <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.3/moment.min.js"></script>
 
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/reichlab/predtimechart@1.0.0/predtimechart.css"> -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/reichlab/predtimechart@1.0.2/predtimechart.css"> -->
     <link rel="stylesheet" href="/predtimechart.css">
 
     <!-- this page's styles -->
@@ -69,10 +69,12 @@
     </div>
 
     <script type="module">
-        // import App from 'https://cdn.jsdelivr.net/gh/reichlab/predtimechart@1.0.0/predtimechart.js';
+        // import App from 'https://cdn.jsdelivr.net/gh/reichlab/predtimechart@1.0.2/predtimechart.js';
         import App from '/predtimechart.js';
 
-        // define _fetchData(), based on: async forecastViz_fetch_data()
+        document.predtimechart = App;  // for debugging
+
+        // _fetchData()
         function _fetchData(isForecast, targetKey, unitAbbrev, referenceDate) {
             let target_path;
             if (isForecast) {
@@ -88,6 +90,7 @@
         let locations = null;
         let availableAsOfs = null;
         let models = null;
+        let initial_as_of = null;
         const promises = [
             fetch('assets/target_variables.json')
                 .then(response => response.json())
@@ -104,6 +107,11 @@
                 .then((data) => {
                     availableAsOfs = data;
                 }),
+            fetch('static/data/initial_as_of.json')
+                .then(response => response.json())
+                .then((data) => {
+                    initial_as_of = data['initial_as_of'];
+                }),
             fetch('static/data/models.json')
                 .then(response => response.json())
                 .then((data) => {
@@ -119,8 +127,9 @@
                 'units': locations,
                 'initial_unit': 'US',
                 'intervals': ['0%', '50%', '95%'],
-                'init_interval': '95%',
+                'initial_interval': '95%',
                 'available_as_ofs': availableAsOfs,
+                'initial_as_of': initial_as_of,
                 'current_date': availableAsOfs.death[availableAsOfs.death.length - 1],
                 'models': models,
                 'initial_checked_models': ['COVIDhub-ensemble'],

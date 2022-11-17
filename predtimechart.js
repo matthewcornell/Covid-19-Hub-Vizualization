@@ -34,7 +34,7 @@ function _setSelectedTruths() {
         selectedTruths.push('Truth as of');
     }
     App.state.selected_truth = selectedTruths;
-    App.fetchDataUpdatePlot(false, null);
+    App.fetchDataUpdatePlot(false, null, true);
 }
 
 
@@ -212,24 +212,10 @@ const App = {
         // save initial selected state
         this.state.selected_target_var = options['initial_target_var'];
         this.state.selected_unit = options['initial_unit'];
-        this.state.selected_interval = options['init_interval'];
-        this.state.selected_as_of_date = options['current_date'];
+        this.state.selected_interval = options['initial_interval'];
+        this.state.selected_as_of_date = options['initial_as_of'];
         // this.state.selected_truth: synchronized via default <input ... checked> setting
         this.state.selected_models = options['initial_checked_models'];
-
-        /*
-        const debugObj = {
-            'target_variables': this.state.target_variables,
-            'units': this.state.units,
-            'intervals': this.state.intervals,
-            'available_as_ofs': this.state.available_as_ofs,
-            'current_date': this.state.current_date,
-            'models': this.state.models,
-            'colors': this.state.colors,
-        };
-        console.log('initialize(): static vars initialized', JSON.stringify(options));
-        console.log('initialize(): static vars initialized', JSON.stringify(debugObj));
-        */
 
         // populate UI elements, setting selection state to initial, first validating `componentDiv`
         const componentDivEle = document.getElementById(componentDiv);
@@ -247,7 +233,7 @@ const App = {
 
         // pull initial data (current truth, selected truth, and selected forecast) and update the plot
         console.log('initialize(): fetching data and updating plot');
-        this.fetchDataUpdatePlot(true, true);
+        this.fetchDataUpdatePlot(true, true, false);
 
         console.log('initialize(): done');
     },
@@ -338,15 +324,15 @@ const App = {
         // option, unit, and interval selects
         $('#target_variable').on('change', function () {
             App.state.selected_target_var = this.value;
-            App.fetchDataUpdatePlot(true, true);
+            App.fetchDataUpdatePlot(true, true, false);
         });
         $('#unit').on('change', function () {
             App.state.selected_unit = this.value;
-            App.fetchDataUpdatePlot(true, true);
+            App.fetchDataUpdatePlot(true, true, false);
         });
         $('#intervals').on('change', function () {
             App.state.selected_interval = this.value;
-            App.fetchDataUpdatePlot(false, null);
+            App.fetchDataUpdatePlot(false, null, true);
         });
 
         // truth checkboxes
@@ -361,7 +347,7 @@ const App = {
         $("#forecastViz_shuffle").click(function () {
             App.state.colors = App.state.colors.sort(() => 0.5 - Math.random())
             App.updateModelsList();
-            App.updatePlot();
+            App.updatePlot(true);
         });
 
         // "Select Models" checkbox
@@ -375,7 +361,7 @@ const App = {
                 App.state.selected_models = App.state.last_selected_models;
             }
             App.checkModels(App.state.selected_models);
-            App.updatePlot();
+            App.updatePlot(true);
         });
 
         // wire up model checkboxes
@@ -411,7 +397,7 @@ const App = {
                     return value !== model;
                 });  // App.state.selected_models.remove(model);
             }
-            App.fetchDataUpdatePlot(false, null);
+            App.fetchDataUpdatePlot(false, null, true);
         });
     },
 
@@ -425,7 +411,7 @@ const App = {
         const as_of_index = state.available_as_ofs[state.selected_target_var].indexOf(state.selected_as_of_date);
         if (as_of_index < state.available_as_ofs[state.selected_target_var].length - 1) {
             state.selected_as_of_date = state.available_as_ofs[state.selected_target_var][as_of_index + 1];
-            this.fetchDataUpdatePlot(true, false);
+            this.fetchDataUpdatePlot(true, false, true);
             this.updateTruthAsOfCheckboxText();
         }
     },
@@ -434,7 +420,7 @@ const App = {
         const as_of_index = state.available_as_ofs[state.selected_target_var].indexOf(state.selected_as_of_date);
         if (as_of_index > 0) {
             state.selected_as_of_date = state.available_as_ofs[state.selected_target_var][as_of_index - 1];
-            this.fetchDataUpdatePlot(true, false);
+            this.fetchDataUpdatePlot(true, false, true);
             this.updateTruthAsOfCheckboxText();
         }
     },
@@ -467,56 +453,59 @@ const App = {
      *
      * @param isFetchFirst true if should fetch before plotting. false if no fetch
      * @param isFetchCurrentTruth applies if isFetchFirst: controls whether current truth is fetched in addition to
-     *  as_of truth and forecasts. ignored if not isFetchFirst
+     *   as_of truth and forecasts. ignored if not isFetchFirst
+     * @param isPreserveYLimit passed to updatePlot() - see
      */
-    fetchDataUpdatePlot(isFetchFirst, isFetchCurrentTruth) {
+    fetchDataUpdatePlot(isFetchFirst, isFetchCurrentTruth, isPreserveYLimit) {
         if (isFetchFirst) {
             const promises = [this.fetchAsOfTruth(), this.fetchForecasts()];
             if (isFetchCurrentTruth) {
                 promises.push(this.fetchCurrentTruth());
             }
-            console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}): waiting on promises`);
+            console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}, ${isPreserveYLimit}): waiting on promises`);
             const $plotyDiv = $('#ploty_div');
             if (this.isIndicateRedraw) {
                 $plotyDiv.fadeTo(0, 0.25);
             }
             Promise.all(promises).then((values) => {
-                console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}): Promise.all() done. updating plot`, values);
+                console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}, ${isPreserveYLimit}): Promise.all() done. updating plot`, values);
                 this.updateModelsList();
-                this.updatePlot();
+                this.updatePlot(isPreserveYLimit);
                 if (this.isIndicateRedraw) {
                     $plotyDiv.fadeTo(0, 1.0);
                 }
             });
         } else {
-            console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}): updating plot`);
-            this.updateModelsList();
-            this.updatePlot();
+            console.log(`fetchDataUpdatePlot(${isFetchFirst}, ${isFetchCurrentTruth}, ${isPreserveYLimit}): updating plot`);
+            this.updatePlot(isPreserveYLimit);
         }
     },
     fetchCurrentTruth() {
-        return App._fetchData(false,
+        return App._fetchData(false,  // Promise
             App.state.selected_target_var, App.state.selected_unit, App.state.current_date)
             .then(response => response.json())
             .then((data) => {
                 App.state.current_truth = data;
-            });  // Promise
+            })
+            .catch(error => console.log(`fetchCurrentTruth(): error: ${error.message}`));
     },
     fetchAsOfTruth() {
-        return App._fetchData(false,
+        return App._fetchData(false,  // Promise
             App.state.selected_target_var, App.state.selected_unit, App.state.selected_as_of_date)
             .then(response => response.json())
             .then((data) => {
                 App.state.as_of_truth = data;
-            });  // Promise
+            })
+            .catch(error => console.log(`fetchAsOfTruth(): error: ${error.message}`));
     },
     fetchForecasts() {
-        return App._fetchData(true,
+        return App._fetchData(true,  // Promise
             App.state.selected_target_var, App.state.selected_unit, App.state.selected_as_of_date)
-            .then(response => response.json())
+            .then(response => response.json())  // Promise
             .then((data) => {
                 App.state.forecasts = data;
-            });  // Promise
+            })
+            .catch(error => console.log(`fetchForecasts(): error: ${error.message}`));
     },
 
 
@@ -524,7 +513,12 @@ const App = {
     // plot-related functions
     //
 
-    updatePlot() {
+    /**
+     * Updates the plot, preserving any current xaxis range limit, and optionally any current yaxis range limit
+     *
+     * @param isPreserveYLimit true if should preserve any yaxis range limit currently set
+     */
+    updatePlot(isPreserveYLimit) {
         const plotyDiv = document.getElementById('ploty_div');
         const data = this.getPlotlyData();
         let layout = this.getPlotlyLayout();
@@ -532,37 +526,24 @@ const App = {
             layout = {title: {text: 'No Visualization Data Found'}};
         }
 
-        /*
-        const debugObj = {
-            'selection': {
-                'selected_target_var': this.state.selected_target_var,
-                'selected_unit': this.state.selected_unit,
-                'selected_interval': this.state.selected_interval,
-                'selected_as_of_date': this.state.selected_as_of_date,
-                'selected_truth': this.state.selected_truth,
-                'selected_models': this.state.selected_models
-            },
-            'data': {
-                'current_truth': this.state.current_truth,
-                'as_of_truth': this.state.as_of_truth,
-                'forecasts': this.state.forecasts
-            },
-            'plotly': {
-                'data': data,
-                'layout': layout,
-            },
-        };
-        console.log('updatePlot()', debugObj);
-        */
-
-        // before updating the plot we preserve the xaxis rangeslider "zoom" by retrieving it, redrawing the plot, and
-        // then re-laying it out. NB: the default xaxis.range seems to be: [-1, 6] when updating for the first time, so
-        // we check for the range being an array of two items with the first being a string (date)
+        // before updating the plot we preserve the xaxis rangeslider range limit ("zoom") by retrieving it, redrawing
+        // the plot, and then re-laying it out. NB: the default xaxis.range seems to be [-1, 6] when updating for the
+        // first time (yaxis = [-1, 4]), so we check for the range being an array of two items with the first being a
+        // string (date)
         var currXAxisRange = plotyDiv.layout.xaxis.range;
-        var isXAxisDateRange = ((plotyDiv.layout.xaxis.range.length === 2) && (typeof (currXAxisRange[0]) === "string"));
+        var currYAxisRange = plotyDiv.layout.yaxis.range;
+        // var isXAxisRangeDefault = ((currXAxisRange.length === 2) && (typeof (currXAxisRange[0]) === "string"));
+        var isXAxisRangeDefault = ((currXAxisRange.length === 2) && (currXAxisRange[0] === -1) && (currXAxisRange[1] === 6));
+        var isYAxisRangeDefault = ((currYAxisRange.length === 2) && (currYAxisRange[0] === -1) && (currYAxisRange[1] === 4));
+        console.log('xx 1', currXAxisRange, currYAxisRange, '.', isXAxisRangeDefault, isYAxisRangeDefault);  // todo xx
         Plotly.react(plotyDiv, data, layout);
-        if (isXAxisDateRange) {
+        if (!isXAxisRangeDefault) {
+            console.log('xx 2');
             Plotly.relayout(plotyDiv, 'xaxis.range', currXAxisRange);
+        }
+        if (isPreserveYLimit && !isYAxisRangeDefault) {
+            console.log('xx 3');
+            Plotly.relayout(plotyDiv, 'yaxis.range', currYAxisRange);
         }
     },
     getPlotlyLayout() {
@@ -583,7 +564,25 @@ const App = {
                 yanchor: 'top',
             },
             xaxis: {
-                title: {text: 'Date'}
+                title: {text: 'Date'},
+                rangeselector: {
+                    buttons: [
+                        {
+                            count: 1,
+                            label: '1m',
+                            step: 'month',
+                            stepmode: 'backward'
+                        },
+                        {
+                            count: 6,
+                            label: '6m',
+                            step: 'month',
+                            stepmode: 'backward'
+                        },
+                        {step: 'all'}
+                    ]
+                },
+                rangeslider: {},
             },
             yaxis: {
                 title: {text: variable, hoverformat: '.2f'},
