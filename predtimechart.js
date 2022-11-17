@@ -255,7 +255,7 @@ const App = {
         const plotyDiv = document.getElementById('ploty_div');
         const data = []  // data will be update by `updatePlot()`
         const layout = this.getPlotlyLayout();
-        Plotly.newPlot(plotyDiv, data, layout);
+        Plotly.newPlot(plotyDiv, data, layout, {modeBarButtonsToRemove: ['lasso2d', 'autoScale2d']});
     },
     initializeTargetVarsUI() {
         // populate the target variable select
@@ -535,14 +535,11 @@ const App = {
         // var isXAxisRangeDefault = ((currXAxisRange.length === 2) && (typeof (currXAxisRange[0]) === "string"));
         var isXAxisRangeDefault = ((currXAxisRange.length === 2) && (currXAxisRange[0] === -1) && (currXAxisRange[1] === 6));
         var isYAxisRangeDefault = ((currYAxisRange.length === 2) && (currYAxisRange[0] === -1) && (currYAxisRange[1] === 4));
-        console.log('xx 1', currXAxisRange, currYAxisRange, '.', isXAxisRangeDefault, isYAxisRangeDefault);  // todo xx
         Plotly.react(plotyDiv, data, layout);
         if (!isXAxisRangeDefault) {
-            console.log('xx 2');
             Plotly.relayout(plotyDiv, 'xaxis.range', currXAxisRange);
         }
         if (isPreserveYLimit && !isYAxisRangeDefault) {
-            console.log('xx 3');
             Plotly.relayout(plotyDiv, 'yaxis.range', currYAxisRange);
         }
     },
@@ -565,23 +562,6 @@ const App = {
             },
             xaxis: {
                 title: {text: 'Date'},
-                rangeselector: {
-                    buttons: [
-                        {
-                            count: 1,
-                            label: '1m',
-                            step: 'month',
-                            stepmode: 'backward'
-                        },
-                        {
-                            count: 6,
-                            label: '6m',
-                            step: 'month',
-                            stepmode: 'backward'
-                        },
-                        {step: 'all'}
-                    ]
-                },
                 rangeslider: {},
             },
             yaxis: {
